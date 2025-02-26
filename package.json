@@ -4,7 +4,8 @@
   "main": "main/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "publish": "electron-builder -p always"
   },
   "build": {
     "appId": "com.example.electron-sqlite",
@@ -15,14 +16,31 @@
       "db.sqlite"
     ],
     "win": {
-      "target": "nsis"
-    }
+      "target": "nsis",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Muhammad-Usman-911",
+        "repo": "SqliteElectronUserManagementSystem"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Muhammad-Usman-911/SqliteElectronUserManagementSystem.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "electron-log": "^5.1.1",
     "electron-updater": "^6.3.9",
     "knex": "^3.1.0",
     "puppeteer-core": "^24.2.1",
