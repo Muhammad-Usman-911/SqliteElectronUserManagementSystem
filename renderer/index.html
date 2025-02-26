@@ -170,11 +170,43 @@
             background: #990000;
             color: #fff;
         }
+
+        /* Update notification styles */
+        #update-notification {
+            display: none;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #006600;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            max-width: 300px;
+        }
     </style>
 </head>
 <body>
+    <!-- Update Notification -->
+    <div id="update-notification">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">Update Available</h3>
+        </div>
+        <p id="update-message">A new version is available. Please update to get the latest features.</p>
+        <div id="update-progress" style="display: none;">
+            <div style="background: #333; border-radius: 5px; height: 10px; overflow: hidden; margin: 10px 0;">
+                <div id="progress-bar" style="background: #0066cc; height: 100%; width: 0%; transition: width 0.3s;"></div>
+            </div>
+            <p id="progress-text" style="text-align: center; margin: 5px 0;">0%</p>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button id="later-btn" style="padding: 8px 12px; border: none; border-radius: 5px; background: #404040; color: #fff; cursor: pointer;">Later</button>
+            <button id="update-btn" style="padding: 8px 12px; border: none; border-radius: 5px; background: #0066cc; color: #fff; cursor: pointer;">Update Now</button>
+        </div>
+    </div>
+
     <div class="container">
-        <h1>V 2.0.0</h1>
         <div class="tabs">
             <button class="tab active" data-form="manual">Manual Entry</button>
             <button class="tab" data-form="facebook">Facebook Login</button>

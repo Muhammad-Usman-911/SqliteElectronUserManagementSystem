@@ -1,6 +1,6 @@
 {
   "name": "electron-sqlite-app",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "main": "main/main.js",
   "scripts": {
     "start": "electron .",
@@ -21,7 +21,12 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "allowElevation": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "artifactName": "${productName} Setup ${version}.${ext}"
     },
     "publish": [
       {
@@ -29,7 +34,12 @@
         "owner": "Muhammad-Usman-911",
         "repo": "SqliteElectronUserManagementSystem"
       }
-    ]
+    ],
+    "directories": {
+      "buildResources": "resources",
+      "output": "dist"
+    },
+    "asar": true
   },
   "repository": {
     "type": "git",
