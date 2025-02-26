@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+
+        .container {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: #404040;
+            color: #fff;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .tab:hover {
+            background: #000;
+        }
+
+        .tab.active {
+            background: #0066cc;
+            color: white;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #fff;
+        }
+
+        input, textarea {
+            padding: 12px;
+            border: 1px solid #404040;
+            border-radius: 5px;
+            font-size: 14px;
+            background: #333;
+            color: #fff;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background: #0066cc;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #004c99;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #404040;
+        }
+
+        th {
+            background: #404040;
+            color: #fff;
+        }
+
+        tr:hover {
+            background: #404040;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .edit-btn {
+            background: #0066cc;
+        }
+
+        .edit-btn:hover {
+            background: #004c99;
+        }
+
+        .delete-btn {
+            background: #cc0000;
+        }
+
+        .delete-btn:hover {
+            background: #990000;
+        }
+
+        .login-btn {
+            background: #006600;
+        }
+
+        .login-btn:hover {
+            background: #004d00;
+        }
+
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .success {
+            background: #004d00;
+            color: #fff;
+        }
+
+        .error {
+            background: #990000;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" data-form="manual">Manual Entry</button>
+            <button class="tab" data-form="facebook">Facebook Login</button>
+        </div>
+
+        <div id="status-message" class="status-message"></div>
+
+        <div id="manualForm" class="form-section active">
+            <h2>Manual Account Entry</h2>
+            <form id="accountForm">
+                <div class="input-group">
+                    <label for="name">Nickname</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="input-group">
+                    <label for="email">Email/Username</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit">Add Account</button>
+            </form>
+        </div>
+
+        <div id="facebookForm" class="form-section">
+            <h2>Facebook Account Login</h2>
+            <form id="fbForm">
+                <div class="input-group">
+                    <label for="fbEmail">Facebook Email</label>
+                    <input type="email" id="fbEmail" value="usman20911@gmail.com" required>
+                </div>
+                <div class="input-group">
+                    <label for="fbPassword">Facebook Password</label>
+                    <input type="password" id="fbPassword" value="dc9xPnwVT796ss9" required>
+                </div>
+                <button type="submit">Login with Facebook</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Saved Accounts</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nickname</th>
+                    <th>Email</th>
+                    <th>Login Type</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="accountsList"></tbody>
+        </table>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

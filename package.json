@@ -1,0 +1,34 @@
+{
+  "name": "electron-sqlite-app",
+  "version": "1.0.0",
+  "main": "main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.example.electron-sqlite",
+    "productName": "Electron SQLite App",
+    "files": [
+      "main/**/*",
+      "renderer/**/*",
+      "db.sqlite"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-updater": "^6.3.9",
+    "knex": "^3.1.0",
+    "puppeteer-core": "^24.2.1",
+    "sqlite3": "^5.1.7",
+    "vite": "^6.1.1"
+  }
+}
