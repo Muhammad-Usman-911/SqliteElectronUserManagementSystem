@@ -1,10 +1,12 @@
 const { app, BrowserWindow, ipcMain, dialog, session } = require('electron');
 const puppeteer = require('puppeteer-core');
-const db = require('./database');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const url = require('url');
+
+// Import the database with the correct path management
+const db = require('./database');
 
 let mainWindow;
 let puppeteerWindow = null;

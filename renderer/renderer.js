@@ -5,7 +5,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
-        
+
         tab.classList.add('active');
         document.getElementById(`${tab.dataset.form}Form`).classList.add('active');
     });
@@ -23,30 +23,55 @@ function showStatus(message, isError = false) {
 }
 
 // Handle manual account submission
+// document.getElementById('accountForm').addEventListener('submit', async (e) => {
+//     e.preventDefault();
+
+//     const user = {
+//         user_name: document.getElementById('name').value,
+//         email: document.getElementById('email').value,
+//         password: document.getElementById('password').value,
+//         loginType: 'manual'
+//     };
+
+//     try {
+//         await ipcRenderer.invoke('add-user', user);
+//         showStatus('Account added successfully!');
+//         e.target.reset();
+//         loadAccounts();
+//     } catch (error) {
+//         showStatus('Failed to add account: ' + error.message, true);
+//     }
+// });
+
+// New Code for addition 
+// Handle manual account submission with improved error handling
 document.getElementById('accountForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const user = {
         user_name: document.getElementById('name').value,
         email: document.getElementById('email').value,
         password: document.getElementById('password').value,
-        loginType: 'manual'
+        loginType: 'manual',
+        cookies: null
     };
 
     try {
+        console.log('Adding new manual account:', user);
         await ipcRenderer.invoke('add-user', user);
         showStatus('Account added successfully!');
         e.target.reset();
         loadAccounts();
     } catch (error) {
-        showStatus('Failed to add account: ' + error.message, true);
+        console.error('Failed to add account:', error);
+        showStatus('Failed to add account: ' + (error.message || 'Unknown error'), true);
     }
 });
 
 // Handle Facebook login submission
 document.getElementById('fbForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const loginData = {
         email: document.getElementById('fbEmail').value,
         password: document.getElementById('fbPassword').value
@@ -68,30 +93,67 @@ document.getElementById('fbForm').addEventListener('submit', async (e) => {
 });
 
 // Load accounts
+// async function loadAccounts() {
+//     try {
+//         const accounts = await ipcRenderer.invoke('get-users');
+//         console.log('Accounts : ',accounts);
+//         const list = document.getElementById('accountsList');
+//         list.innerHTML = accounts.map(acc => `
+//             <tr>
+//                 <td>${acc.user_name}</td>
+//                 <td>${acc.email}</td>
+//                 <td>${acc.cookies ? 'Facebook' : 'Manual'}</td>
+//                 <td class="action-buttons">
+//                     ${acc.cookies ? 
+//                         `<button class="login-btn" onclick="loginWithSavedAccount(${acc.id})">Login</button>` : 
+//                         ''
+//                     }
+//                     <button class="edit-btn" onclick="editUser(${acc.id})">Edit</button>
+//                     <button class="delete-btn" onclick="deleteUser(${acc.id})">Delete</button>
+//                 </td>
+//             </tr>
+//         `).join('');
+//     } catch (error) {
+//         showStatus('Failed to load accounts: ' + error.message, true);
+//     }
+// }
+
+// new loadAccount 
+// Load accounts
 async function loadAccounts() {
     try {
+        console.log('Requesting accounts from main process...');
         const accounts = await ipcRenderer.invoke('get-users');
-        console.log('Accounts : ',accounts);
+        console.log('Received accounts:', accounts);
+
         const list = document.getElementById('accountsList');
+
+        if (!accounts || accounts.length === 0) {
+            list.innerHTML = '<tr><td colspan="4" style="text-align:center;">No accounts found</td></tr>';
+            return;
+        }
+
         list.innerHTML = accounts.map(acc => `
-            <tr>
-                <td>${acc.user_name}</td>
-                <td>${acc.email}</td>
-                <td>${acc.cookies ? 'Facebook' : 'Manual'}</td>
-                <td class="action-buttons">
-                    ${acc.cookies ? 
-                        `<button class="login-btn" onclick="loginWithSavedAccount(${acc.id})">Login</button>` : 
-                        ''
-                    }
-                    <button class="edit-btn" onclick="editUser(${acc.id})">Edit</button>
-                    <button class="delete-btn" onclick="deleteUser(${acc.id})">Delete</button>
-                </td>
-            </tr>
-        `).join('');
+          <tr>
+              <td>${acc.user_name || 'N/A'}</td>
+              <td>${acc.email || 'N/A'}</td>
+              <td>${acc.type || (acc.cookies ? 'Facebook' : 'Manual')}</td>
+              <td class="action-buttons">
+                  ${acc.cookies || acc.type === 'facebook' ?
+                `<button class="login-btn" onclick="loginWithSavedAccount(${acc.id})">Login</button>` :
+                ''
+            }
+                  <button class="edit-btn" onclick="editUser(${acc.id})">Edit</button>
+                  <button class="delete-btn" onclick="deleteUser(${acc.id})">Delete</button>
+              </td>
+          </tr>
+      `).join('');
     } catch (error) {
+        console.error('Failed to load accounts:', error);
         showStatus('Failed to load accounts: ' + error.message, true);
     }
 }
+
 
 // Login with saved account
 async function loginWithSavedAccount(id) {
@@ -148,7 +210,7 @@ ipcRenderer.on('toggle-app-visibility', (event, visible) => {
     containers.forEach(container => {
         container.style.display = visible ? 'block' : 'none';
     });
-    
+
     if (!visible) {
         // Add message that Facebook login is in progress
         const loginMsg = document.createElement('div');
@@ -191,14 +253,14 @@ ipcRenderer.on('show-notification', (event, { title, message }) => {
         box-shadow: 0 0 10px rgba(0,0,0,0.3);
         z-index: 1002;
     `;
-    
+
     notification.innerHTML = `
         <h4 style="margin: 0 0 10px 0;">${title}</h4>
         <p style="margin: 0;">${message}</p>
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.remove();
     }, 5000);
@@ -226,7 +288,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 <button id="update-btn" style="padding: 8px 12px; border: none; border-radius: 5px; background: #0066cc; color: #fff; cursor: pointer;">Update Now</button>
             </div>
         `;
-        
+
         // Style the notification
         updateNotification.style.cssText = `
             display: none;
@@ -241,13 +303,13 @@ window.addEventListener('DOMContentLoaded', () => {
             z-index: 1000;
             max-width: 300px;
         `;
-        
+
         document.body.appendChild(updateNotification);
-        
+
         // Add event listeners for update buttons
         document.getElementById('update-btn').addEventListener('click', async () => {
             const updateDownloaded = localStorage.getItem('updateDownloaded') === 'true';
-            
+
             if (updateDownloaded) {
                 // If update is downloaded, install it
                 await ipcRenderer.invoke('install-update');
@@ -259,18 +321,18 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
-        
+
         document.getElementById('later-btn').addEventListener('click', () => {
             document.getElementById('update-notification').style.display = 'none';
         });
     }
-    
+
     // Check if there was a pending update on load
     if (localStorage.getItem('updateAvailable') === 'true') {
         const version = localStorage.getItem('updateVersion');
         document.getElementById('update-message').textContent = `Version ${version || 'new'} is available. Download now?`;
         document.getElementById('update-notification').style.display = 'block';
-        
+
         if (localStorage.getItem('updateDownloaded') === 'true') {
             document.getElementById('update-message').textContent = 'Update downloaded. Restart now to install?';
             document.getElementById('update-btn').textContent = 'Restart Now';
@@ -282,7 +344,7 @@ window.addEventListener('DOMContentLoaded', () => {
 ipcRenderer.on('update-available', (event, info) => {
     document.getElementById('update-message').textContent = `Version ${info.version} is available. Download now?`;
     document.getElementById('update-notification').style.display = 'block';
-    
+
     // Save in localStorage to persist between app refreshes
     localStorage.setItem('updateAvailable', 'true');
     localStorage.setItem('updateVersion', info.version);
@@ -294,7 +356,7 @@ ipcRenderer.on('download-progress', (event, percent) => {
     const updateBtn = document.getElementById('update-btn');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
-    
+
     updateProgress.style.display = 'block';
     updateBtn.disabled = true;
     progressBar.style.width = `${percent}%`;
@@ -306,12 +368,12 @@ ipcRenderer.on('update-downloaded', () => {
     const updateProgress = document.getElementById('update-progress');
     const updateBtn = document.getElementById('update-btn');
     const updateMessage = document.getElementById('update-message');
-    
+
     updateProgress.style.display = 'none';
     updateBtn.disabled = false;
     updateMessage.textContent = 'Update downloaded. Restart now to install?';
     updateBtn.textContent = 'Restart Now';
-    
+
     // Update stored status
     localStorage.setItem('updateDownloaded', 'true');
 });
@@ -320,7 +382,7 @@ ipcRenderer.on('update-downloaded', () => {
 ipcRenderer.on('update-error', (event, message) => {
     const updateMessage = document.getElementById('update-message');
     const updateBtn = document.getElementById('update-btn');
-    
+
     updateMessage.textContent = `Update error: ${message}`;
     updateBtn.disabled = false;
 });
