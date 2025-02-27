@@ -1,10 +1,13 @@
 {
   "name": "electron-sqlite-app",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "main": "main/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
+    "make": "electron-builder --dir",
+    "build-win": "electron-builder --win",
+    "build-mac": "electron-builder --mac",
+    "build-linux": "electron-builder --linux",
     "publish": "electron-builder -p always"
   },
   "build": {
@@ -13,10 +16,18 @@
     "files": [
       "main/**/*",
       "renderer/**/*",
-      "db.sqlite"
+      "!node_modules/.cache",
+      "!**/*.md",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "./db.sqlite",
+        "to": "db.sqlite"
+      }
     ],
     "win": {
-      "target": "nsis",
+      "target": ["nsis", "portable"],
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
@@ -27,6 +38,17 @@
       "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "artifactName": "${productName} Setup ${version}.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage", "deb", "rpm"],
+      "category": "Utility",
+      "artifactName": "${productName}-Linux-${version}.${ext}"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "artifactName": "${productName}-Mac-${version}.${ext}"
     },
     "publish": [
       {
@@ -45,10 +67,6 @@
     "type": "git",
     "url": "https://github.com/Muhammad-Usman-911/SqliteElectronUserManagementSystem.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "electron-log": "^5.1.1",
     "electron-updater": "^6.3.9",

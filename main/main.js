@@ -40,9 +40,10 @@ app.whenReady().then(() => {
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
-        }
+        },
+        
     });
-    
+    mainWindow.maximize();
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
     
     // Check for updates after the window is created
@@ -480,3 +481,4 @@ app.on('activate', () => {
         createWindow();
     }
 });
+
