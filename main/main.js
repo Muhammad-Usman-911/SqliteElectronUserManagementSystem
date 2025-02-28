@@ -5,18 +5,19 @@ const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const url = require('url');
 
-// Import the database with the correct path management
+// Import the database
 const db = require('./database');
 
+// Global variables
 let mainWindow;
 let puppeteerWindow = null;
-// Add this property to track download completion
 let downloadComplete = false;
 
-// Configure logging
+// Configure logging and auto-updater
 log.transports.file.level = 'info';
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
 
 // Auto-updater variables
 let updateAvailable = false;
@@ -44,9 +45,9 @@ app.whenReady().then(() => {
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
-        },
-        
+        }
     });
+    
     mainWindow.maximize();
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
     
@@ -63,9 +64,9 @@ function checkForUpdates() {
             log.error('Error checking for updates:', err);
         });
 }
-// Add this to your IPC handlers section in main.js
+
+// IPC handlers
 ipcMain.handle('check-for-updates', async () => {
-    // Only check if app is packaged
     if (app.isPackaged) {
         return checkForUpdates();
     } else {
@@ -73,7 +74,8 @@ ipcMain.handle('check-for-updates', async () => {
         return { success: false, message: 'App is in development mode' };
     }
 });
-// Update event listeners
+
+// Auto-updater event listeners
 autoUpdater.on('checking-for-update', () => {
     log.info('Checking for updates...');
 });
@@ -105,23 +107,19 @@ autoUpdater.on('download-progress', (progressObj) => {
     }
 });
 
-// autoUpdater.on('update-downloaded', () => {
-//     log.info('Update downloaded');
-    
-//     if (mainWindow && !mainWindow.isDestroyed()) {
-//         mainWindow.webContents.send('update-downloaded');
-//     }
-// });
-// Update the 'update-downloaded' event
 autoUpdater.on('update-downloaded', () => {
     log.info('Update downloaded');
     downloadComplete = true;
     
     if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('update-downloaded');
+        
+        // Automatically install update after a brief delay
+        setTimeout(() => {
+            autoUpdater.quitAndInstall(false, true);
+        }, 2000);
     }
 });
-
 
 autoUpdater.on('error', (err) => {
     log.error('Error during update:', err);
@@ -140,14 +138,6 @@ ipcMain.handle('start-update-download', () => {
     return { success: false, message: 'No update available' };
 });
 
-// ipcMain.handle('install-update', () => {
-//     if (updateAvailable && autoUpdater.downloadedUpdateHelper) {
-//         autoUpdater.quitAndInstall(false, true);
-//         return { success: true };
-//     }
-//     return { success: false, message: 'No valid update available' };
-// });
-// Modify the 'install-update' handler again
 ipcMain.handle('install-update', () => {
     if (updateAvailable && downloadComplete) {
         autoUpdater.quitAndInstall(false, true);
@@ -156,6 +146,7 @@ ipcMain.handle('install-update', () => {
     return { success: false, message: 'No valid update available' };
 });
 
+// Create a window for Facebook login with Puppeteer
 function createPuppeteerWindow() {
     // If a window already exists, focus it but don't create a new one
     if (puppeteerWindow && !puppeteerWindow.isDestroyed()) {
@@ -268,15 +259,14 @@ ipcMain.handle("login-facebook", async (event, { email, password }) => {
         
         // Save to database
         const savedId = await saveAccountToDB({
-            name: nickname,
+            user_name: nickname,
             email: email,
             password: password,
             cookies: JSON.stringify(cookies),
             type: 'facebook'
         });
         
-        // Note: We don't close the window, we keep it open as requested
-        // But we show a success message to the user
+        // Show a success message to the user
         mainWindow.webContents.send('show-notification', {
             title: 'Login Successful',
             message: 'Facebook account has been saved successfully!'
@@ -321,12 +311,12 @@ async function updateUserCookies(id, cookies) {
 
 // Save account to database
 async function saveAccountToDB(userData) {
-    console.log('Facebook Saving User ! : ', userData);
+    console.log('Facebook Saving User: ', userData);
     return new Promise((resolve, reject) => {
-        const { name, email, password, cookies, type } = userData;
+        const { user_name, email, password, cookies, type } = userData;
         db.run(
-            "INSERT INTO user (name, email, password, cookies, type) VALUES (?, ?, ?, ?, ?)",
-            [name, email, password, cookies, type],
+            "INSERT INTO user (user_name, email, password, cookies, type) VALUES (?, ?, ?, ?, ?)",
+            [user_name, email, password, cookies, type],
             function(err) {
                 if (err) reject(err);
                 resolve(this.lastID);
@@ -338,8 +328,8 @@ async function saveAccountToDB(userData) {
 // Add a new user
 ipcMain.handle("add-user", async (event, user) => {
     return new Promise((resolve, reject) => {
-        db.run("INSERT INTO user (name, email, password, cookies) VALUES (?, ?, ?, ?)",
-            [user.name, user.email, user.password, user.cookies], function (err) {
+        db.run("INSERT INTO user (user_name, email, password, cookies) VALUES (?, ?, ?, ?)",
+            [user.user_name, user.email, user.password, user.cookies], function (err) {
                 if (err) reject(err);
                 resolve(this.lastID);
             }
@@ -369,18 +359,6 @@ ipcMain.handle("delete-user", async (event, id) => {
             if (err) reject(err);
             resolve(true);
         });
-    });
-});
-
-// Update user
-ipcMain.handle("update-user", async (event, user) => {
-    return new Promise((resolve, reject) => {
-        db.run("UPDATE user SET name = ?, email = ?, password = ?, cookies = ?, two_fa_code = ? WHERE id = ?",
-            [user.name, user.email, user.password, user.cookies, user.twoFA, user.id], function (err) {
-                if (err) reject(err);
-                resolve(true);
-            }
-        );
     });
 });
 
@@ -487,8 +465,6 @@ ipcMain.handle("login-saved-account", async (event, id) => {
             message: 'Facebook account has been logged in successfully!'
         });
         
-        // Note: Window remains open as requested
-        
         return { success: true, message: "Logged in successfully!" };
     } catch (error) {
         console.error('Saved account login error:', error);
@@ -514,4 +490,3 @@ app.on('activate', () => {
         createWindow();
     }
 });
-

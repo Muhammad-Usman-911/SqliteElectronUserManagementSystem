@@ -11,22 +11,24 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
-// Show status message
+// Status message handler
 function showStatus(message, isError = false) {
     const statusEl = document.getElementById('status-message');
     statusEl.textContent = message;
     statusEl.className = `status-message ${isError ? 'error' : 'success'}`;
     statusEl.style.display = 'block';
+    
     setTimeout(() => {
         statusEl.style.display = 'none';
     }, 5000);
 }
 
+// Manual account form handler
 document.getElementById('accountForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const user = {
-        name: document.getElementById('name').value,
+        user_name: document.getElementById('name').value,
         email: document.getElementById('email').value,
         password: document.getElementById('password').value,
         loginType: 'manual',
@@ -45,7 +47,7 @@ document.getElementById('accountForm').addEventListener('submit', async (e) => {
     }
 });
 
-// Handle Facebook login submission
+// Facebook login form handler
 document.getElementById('fbForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -57,6 +59,7 @@ document.getElementById('fbForm').addEventListener('submit', async (e) => {
     try {
         showStatus('Facebook Login Started! Please wait...', false);
         const result = await ipcRenderer.invoke('login-facebook', loginData);
+        
         if (result.success) {
             showStatus('Facebook login successful!');
             e.target.reset();
@@ -69,7 +72,7 @@ document.getElementById('fbForm').addEventListener('submit', async (e) => {
     }
 });
 
-// Load accounts
+// Load accounts from database
 async function loadAccounts() {
     try {
         console.log('Requesting accounts from main process...');
@@ -85,14 +88,14 @@ async function loadAccounts() {
 
         list.innerHTML = accounts.map(acc => `
           <tr>
-              <td>${acc.name || 'N/A'}</td>
+              <td>${acc.user_name || 'N/A'}</td>
               <td>${acc.email || 'N/A'}</td>
               <td>${acc.type || (acc.cookies ? 'Facebook' : 'Manual')}</td>
               <td class="action-buttons">
                   ${acc.cookies || acc.type === 'facebook' ?
-                `<button class="login-btn" onclick="loginWithSavedAccount(${acc.id})">Login</button>` :
-                ''
-            }
+                    `<button class="login-btn" onclick="loginWithSavedAccount(${acc.id})">Login</button>` :
+                    ''
+                  }
                   <button class="edit-btn" onclick="editUser(${acc.id})">Edit</button>
                   <button class="delete-btn" onclick="deleteUser(${acc.id})">Delete</button>
               </td>
@@ -109,6 +112,7 @@ async function loginWithSavedAccount(id) {
     try {
         showStatus('Logging in with saved account...', false);
         const result = await ipcRenderer.invoke('login-saved-account', id);
+        
         if (result.success) {
             showStatus('Logged in successfully!');
         } else {
@@ -119,7 +123,7 @@ async function loginWithSavedAccount(id) {
     }
 }
 
-// Delete user
+// Delete user account
 async function deleteUser(id) {
     try {
         await ipcRenderer.invoke('delete-user', id);
@@ -130,11 +134,12 @@ async function deleteUser(id) {
     }
 }
 
-// Edit user
+// Edit user account
 async function editUser(id) {
     try {
         const accounts = await ipcRenderer.invoke('get-users');
         const user = accounts.find(acc => acc.id === id);
+        
         if (user) {
             if (user.cookies) {
                 document.querySelector('[data-form="facebook"]').click();
@@ -142,7 +147,7 @@ async function editUser(id) {
                 document.getElementById('fbPassword').value = user.password;
             } else {
                 document.querySelector('[data-form="manual"]').click();
-                document.getElementById('name').value = user.name;
+                document.getElementById('name').value = user.user_name;
                 document.getElementById('email').value = user.email;
                 document.getElementById('password').value = user.password;
             }
@@ -153,7 +158,7 @@ async function editUser(id) {
     }
 }
 
-// Toggle app content visibility (used during Facebook login)
+// Handle Facebook login visibility toggling
 ipcRenderer.on('toggle-app-visibility', (event, visible) => {
     const containers = document.querySelectorAll('.container');
     containers.forEach(container => {
@@ -187,7 +192,7 @@ ipcRenderer.on('toggle-app-visibility', (event, visible) => {
     }
 });
 
-// Show custom notification
+// Display custom notifications
 ipcRenderer.on('show-notification', (event, { title, message }) => {
     const notification = document.createElement('div');
     notification.style.cssText = `
@@ -215,7 +220,7 @@ ipcRenderer.on('show-notification', (event, { title, message }) => {
     }, 5000);
 });
 
-// Update button handlers
+// Update button handler - modified to auto-restart
 document.getElementById('update-btn').addEventListener('click', async () => {
     try {
         const updateBtn = document.getElementById('update-btn');
@@ -252,81 +257,36 @@ document.getElementById('update-btn').addEventListener('click', async () => {
     }
 });
 
+// Close update notification
 document.getElementById('later-btn').addEventListener('click', () => {
     document.getElementById('update-notification').style.display = 'none';
 });
 
-// Check for update status on app load
-// window.addEventListener('DOMContentLoaded', () => {
-//     // Check if there was a pending update on load
-//     const updateAvailable = localStorage.getItem('updateAvailable') === 'true';
-//     if (updateAvailable) {
-//         const version = localStorage.getItem('updateVersion') || 'new';
-//         const updateDownloaded = localStorage.getItem('updateDownloaded') === 'true';
-        
-//         if (updateDownloaded) {
-//             document.getElementById('update-message').textContent = 'Update downloaded. Restart now to install?';
-//             document.getElementById('update-btn').textContent = 'Restart Now';
-//         } else {
-//             document.getElementById('update-message').textContent = `Version ${version} is available. Download now?`;
-//         }
-        
-//         document.getElementById('update-notification').style.display = 'block';
-//     }
-    
-//     // Let the main process know we're ready to receive update notifications
-//     ipcRenderer.invoke('check-for-updates').catch(err => {
-//         console.error('Failed to check for updates:', err);
-//     });
-// });
-
-// In the window.addEventListener('DOMContentLoaded', ...) function
+// Initialize the app
 window.addEventListener('DOMContentLoaded', () => {
-    // Clear any stale update status when developing
-    if (!navigator.userAgent.includes('Electron')) {
-        localStorage.removeItem('updateAvailable');
-        localStorage.removeItem('updateVersion');
-        localStorage.removeItem('updateDownloaded');
-    }
+    // Check for updates on load
+    ipcRenderer.invoke('check-for-updates').catch(err => {
+        console.error('Failed to check for updates:', err);
+    });
     
-    // Check if there was a pending update on load
-    const updateAvailable = localStorage.getItem('updateAvailable') === 'true';
-    if (updateAvailable) {
-        const version = localStorage.getItem('updateVersion') || 'new';
-        const updateDownloaded = localStorage.getItem('updateDownloaded') === 'true';
-        
-        if (updateDownloaded) {
-            document.getElementById('update-message').textContent = 'Update downloaded. Restart now to install?';
-            document.getElementById('update-btn').textContent = 'Restart Now';
-        } else {
-            document.getElementById('update-message').textContent = `Version ${version} is available. Download now?`;
-        }
-        
-        document.getElementById('update-notification').style.display = 'block';
-    }
-    
-    // Only check for updates if we're in a real Electron environment
-    if (navigator.userAgent.includes('Electron')) {
-        ipcRenderer.invoke('check-for-updates').catch(err => {
-            console.error('Failed to check for updates:', err);
-        });
-    }
+    // Load accounts when the page loads
+    loadAccounts();
 });
 
-// Listen for update available
+// Handle update available notification
 ipcRenderer.on('update-available', (event, info) => {
     document.getElementById('update-message').textContent = `Version ${info.version || 'new'} is available. Download now?`;
     document.getElementById('update-notification').style.display = 'block';
     document.getElementById('update-btn').disabled = false;
     document.getElementById('update-btn').textContent = 'Update 🆕';
 
-    // Save in localStorage to persist between app refreshes
+    // Store update status in localStorage
     localStorage.setItem('updateAvailable', 'true');
     localStorage.setItem('updateVersion', info.version || 'new');
     localStorage.setItem('updateDownloaded', 'false');
 });
 
-// Listen for download progress
+// Update download progress
 ipcRenderer.on('download-progress', (event, percent) => {
     const updateProgress = document.getElementById('update-progress');
     const progressBar = document.getElementById('progress-bar');
@@ -337,23 +297,16 @@ ipcRenderer.on('download-progress', (event, percent) => {
     progressText.textContent = `${Math.round(percent)}%`;
 });
 
-// Listen for update downloaded
+// Auto-install update when downloaded
 ipcRenderer.on('update-downloaded', () => {
-    const updateProgress = document.getElementById('update-progress');
-    const updateBtn = document.getElementById('update-btn');
-    const updateMessage = document.getElementById('update-message');
-
-    updateProgress.style.display = 'none';
-    updateBtn.disabled = false;
-    updateBtn.textContent = 'Restart Now';
-    updateMessage.textContent = 'Update downloaded. Restart now to install?';
-
-    // Update stored status
+    // Store the fact that update is downloaded
     localStorage.setItem('updateDownloaded', 'true');
-    showStatus('Update downloaded successfully! Click "Restart Now" to install.', false);
+    
+    // Automatically install instead of showing notification
+    ipcRenderer.invoke('install-update');
 });
 
-// Listen for update errors
+// Show update errors
 ipcRenderer.on('update-error', (event, message) => {
     const updateMessage = document.getElementById('update-message');
     const updateBtn = document.getElementById('update-btn');
@@ -366,6 +319,3 @@ ipcRenderer.on('update-error', (event, message) => {
     
     showStatus('Update error: ' + message, true);
 });
-
-// Load accounts when the page loads
-loadAccounts();
