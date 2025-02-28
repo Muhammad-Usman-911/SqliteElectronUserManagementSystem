@@ -22,34 +22,11 @@ function showStatus(message, isError = false) {
     }, 5000);
 }
 
-// Handle manual account submission
-// document.getElementById('accountForm').addEventListener('submit', async (e) => {
-//     e.preventDefault();
-
-//     const user = {
-//         user_name: document.getElementById('name').value,
-//         email: document.getElementById('email').value,
-//         password: document.getElementById('password').value,
-//         loginType: 'manual'
-//     };
-
-//     try {
-//         await ipcRenderer.invoke('add-user', user);
-//         showStatus('Account added successfully!');
-//         e.target.reset();
-//         loadAccounts();
-//     } catch (error) {
-//         showStatus('Failed to add account: ' + error.message, true);
-//     }
-// });
-
-// New Code for addition 
-// Handle manual account submission with improved error handling
 document.getElementById('accountForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const user = {
-        user_name: document.getElementById('name').value,
+        name: document.getElementById('name').value,
         email: document.getElementById('email').value,
         password: document.getElementById('password').value,
         loginType: 'manual',
@@ -93,33 +70,6 @@ document.getElementById('fbForm').addEventListener('submit', async (e) => {
 });
 
 // Load accounts
-// async function loadAccounts() {
-//     try {
-//         const accounts = await ipcRenderer.invoke('get-users');
-//         console.log('Accounts : ',accounts);
-//         const list = document.getElementById('accountsList');
-//         list.innerHTML = accounts.map(acc => `
-//             <tr>
-//                 <td>${acc.user_name}</td>
-//                 <td>${acc.email}</td>
-//                 <td>${acc.cookies ? 'Facebook' : 'Manual'}</td>
-//                 <td class="action-buttons">
-//                     ${acc.cookies ? 
-//                         `<button class="login-btn" onclick="loginWithSavedAccount(${acc.id})">Login</button>` : 
-//                         ''
-//                     }
-//                     <button class="edit-btn" onclick="editUser(${acc.id})">Edit</button>
-//                     <button class="delete-btn" onclick="deleteUser(${acc.id})">Delete</button>
-//                 </td>
-//             </tr>
-//         `).join('');
-//     } catch (error) {
-//         showStatus('Failed to load accounts: ' + error.message, true);
-//     }
-// }
-
-// new loadAccount 
-// Load accounts
 async function loadAccounts() {
     try {
         console.log('Requesting accounts from main process...');
@@ -135,7 +85,7 @@ async function loadAccounts() {
 
         list.innerHTML = accounts.map(acc => `
           <tr>
-              <td>${acc.user_name || 'N/A'}</td>
+              <td>${acc.name || 'N/A'}</td>
               <td>${acc.email || 'N/A'}</td>
               <td>${acc.type || (acc.cookies ? 'Facebook' : 'Manual')}</td>
               <td class="action-buttons">
@@ -153,7 +103,6 @@ async function loadAccounts() {
         showStatus('Failed to load accounts: ' + error.message, true);
     }
 }
-
 
 // Login with saved account
 async function loginWithSavedAccount(id) {
@@ -193,7 +142,7 @@ async function editUser(id) {
                 document.getElementById('fbPassword').value = user.password;
             } else {
                 document.querySelector('[data-form="manual"]').click();
-                document.getElementById('name').value = user.user_name;
+                document.getElementById('name').value = user.name;
                 document.getElementById('email').value = user.email;
                 document.getElementById('password').value = user.password;
             }
@@ -266,99 +215,124 @@ ipcRenderer.on('show-notification', (event, { title, message }) => {
     }, 5000);
 });
 
-// Update notification handling
-window.addEventListener('DOMContentLoaded', () => {
-    // Create update notification element if it doesn't exist
-    if (!document.getElementById('update-notification')) {
-        const updateNotification = document.createElement('div');
-        updateNotification.id = 'update-notification';
-        updateNotification.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 style="margin: 0;">Update Available</h3>
-            </div>
-            <p id="update-message">A new version is available. Please update to get the latest features.</p>
-            <div id="update-progress" style="display: none;">
-                <div style="background: #333; border-radius: 5px; height: 10px; overflow: hidden; margin: 10px 0;">
-                    <div id="progress-bar" style="background: #0066cc; height: 100%; width: 0%; transition: width 0.3s;"></div>
-                </div>
-                <p id="progress-text" style="text-align: center; margin: 5px 0;">0%</p>
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="later-btn" style="padding: 8px 12px; border: none; border-radius: 5px; background: #404040; color: #fff; cursor: pointer;">Later</button>
-                <button id="update-btn" style="padding: 8px 12px; border: none; border-radius: 5px; background: #0066cc; color: #fff; cursor: pointer;">Update Now</button>
-            </div>
-        `;
-
-        // Style the notification
-        updateNotification.style.cssText = `
-            display: none;
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #006600;
-            color: white;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            z-index: 1000;
-            max-width: 300px;
-        `;
-
-        document.body.appendChild(updateNotification);
-
-        // Add event listeners for update buttons
-        document.getElementById('update-btn').addEventListener('click', async () => {
-            const updateDownloaded = localStorage.getItem('updateDownloaded') === 'true';
-
-            if (updateDownloaded) {
-                // If update is downloaded, install it
-                await ipcRenderer.invoke('install-update');
+// Update button handlers
+document.getElementById('update-btn').addEventListener('click', async () => {
+    try {
+        const updateBtn = document.getElementById('update-btn');
+        updateBtn.disabled = true;
+        updateBtn.textContent = 'Processing...';
+        
+        const updateDownloaded = localStorage.getItem('updateDownloaded') === 'true';
+        console.log('Update button clicked. Update downloaded:', updateDownloaded);
+        
+        if (updateDownloaded) {
+            // If update is downloaded, install it
+            console.log('Sending install-update command to main process');
+            await ipcRenderer.invoke('install-update');
+        } else {
+            // Otherwise start the download
+            console.log('Sending start-update-download command to main process');
+            const result = await ipcRenderer.invoke('start-update-download');
+            
+            if (!result || !result.success) {
+                updateBtn.disabled = false;
+                updateBtn.textContent = 'Update 🆕';
+                document.getElementById('update-message').textContent = result?.message || 'Update failed to start';
+                showStatus('Update download failed: ' + (result?.message || 'Unknown error'), true);
             } else {
-                // Otherwise start the download
-                const result = await ipcRenderer.invoke('start-update-download');
-                if (!result.success) {
-                    document.getElementById('update-message').textContent = result.message;
-                }
+                document.getElementById('update-progress').style.display = 'block';
             }
-        });
-
-        document.getElementById('later-btn').addEventListener('click', () => {
-            document.getElementById('update-notification').style.display = 'none';
-        });
+        }
+    } catch (error) {
+        console.error('Update action failed:', error);
+        document.getElementById('update-message').textContent = 'Update failed: ' + error.message;
+        document.getElementById('update-btn').disabled = false;
+        document.getElementById('update-btn').textContent = 'Update 🆕';
+        showStatus('Update action failed: ' + error.message, true);
     }
+});
 
+document.getElementById('later-btn').addEventListener('click', () => {
+    document.getElementById('update-notification').style.display = 'none';
+});
+
+// Check for update status on app load
+// window.addEventListener('DOMContentLoaded', () => {
+//     // Check if there was a pending update on load
+//     const updateAvailable = localStorage.getItem('updateAvailable') === 'true';
+//     if (updateAvailable) {
+//         const version = localStorage.getItem('updateVersion') || 'new';
+//         const updateDownloaded = localStorage.getItem('updateDownloaded') === 'true';
+        
+//         if (updateDownloaded) {
+//             document.getElementById('update-message').textContent = 'Update downloaded. Restart now to install?';
+//             document.getElementById('update-btn').textContent = 'Restart Now';
+//         } else {
+//             document.getElementById('update-message').textContent = `Version ${version} is available. Download now?`;
+//         }
+        
+//         document.getElementById('update-notification').style.display = 'block';
+//     }
+    
+//     // Let the main process know we're ready to receive update notifications
+//     ipcRenderer.invoke('check-for-updates').catch(err => {
+//         console.error('Failed to check for updates:', err);
+//     });
+// });
+
+// In the window.addEventListener('DOMContentLoaded', ...) function
+window.addEventListener('DOMContentLoaded', () => {
+    // Clear any stale update status when developing
+    if (!navigator.userAgent.includes('Electron')) {
+        localStorage.removeItem('updateAvailable');
+        localStorage.removeItem('updateVersion');
+        localStorage.removeItem('updateDownloaded');
+    }
+    
     // Check if there was a pending update on load
-    if (localStorage.getItem('updateAvailable') === 'true') {
-        const version = localStorage.getItem('updateVersion');
-        document.getElementById('update-message').textContent = `Version ${version || 'new'} is available. Download now?`;
-        document.getElementById('update-notification').style.display = 'block';
-
-        if (localStorage.getItem('updateDownloaded') === 'true') {
+    const updateAvailable = localStorage.getItem('updateAvailable') === 'true';
+    if (updateAvailable) {
+        const version = localStorage.getItem('updateVersion') || 'new';
+        const updateDownloaded = localStorage.getItem('updateDownloaded') === 'true';
+        
+        if (updateDownloaded) {
             document.getElementById('update-message').textContent = 'Update downloaded. Restart now to install?';
             document.getElementById('update-btn').textContent = 'Restart Now';
+        } else {
+            document.getElementById('update-message').textContent = `Version ${version} is available. Download now?`;
         }
+        
+        document.getElementById('update-notification').style.display = 'block';
+    }
+    
+    // Only check for updates if we're in a real Electron environment
+    if (navigator.userAgent.includes('Electron')) {
+        ipcRenderer.invoke('check-for-updates').catch(err => {
+            console.error('Failed to check for updates:', err);
+        });
     }
 });
 
 // Listen for update available
 ipcRenderer.on('update-available', (event, info) => {
-    document.getElementById('update-message').textContent = `Version ${info.version} is available. Download now?`;
+    document.getElementById('update-message').textContent = `Version ${info.version || 'new'} is available. Download now?`;
     document.getElementById('update-notification').style.display = 'block';
+    document.getElementById('update-btn').disabled = false;
+    document.getElementById('update-btn').textContent = 'Update 🆕';
 
     // Save in localStorage to persist between app refreshes
     localStorage.setItem('updateAvailable', 'true');
-    localStorage.setItem('updateVersion', info.version);
+    localStorage.setItem('updateVersion', info.version || 'new');
+    localStorage.setItem('updateDownloaded', 'false');
 });
 
 // Listen for download progress
 ipcRenderer.on('download-progress', (event, percent) => {
     const updateProgress = document.getElementById('update-progress');
-    const updateBtn = document.getElementById('update-btn');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
 
     updateProgress.style.display = 'block';
-    updateBtn.disabled = true;
     progressBar.style.width = `${percent}%`;
     progressText.textContent = `${Math.round(percent)}%`;
 });
@@ -371,20 +345,26 @@ ipcRenderer.on('update-downloaded', () => {
 
     updateProgress.style.display = 'none';
     updateBtn.disabled = false;
-    updateMessage.textContent = 'Update downloaded. Restart now to install?';
     updateBtn.textContent = 'Restart Now';
+    updateMessage.textContent = 'Update downloaded. Restart now to install?';
 
     // Update stored status
     localStorage.setItem('updateDownloaded', 'true');
+    showStatus('Update downloaded successfully! Click "Restart Now" to install.', false);
 });
 
 // Listen for update errors
 ipcRenderer.on('update-error', (event, message) => {
     const updateMessage = document.getElementById('update-message');
     const updateBtn = document.getElementById('update-btn');
+    const updateProgress = document.getElementById('update-progress');
 
     updateMessage.textContent = `Update error: ${message}`;
     updateBtn.disabled = false;
+    updateBtn.textContent = 'Try Again';
+    updateProgress.style.display = 'none';
+    
+    showStatus('Update error: ' + message, true);
 });
 
 // Load accounts when the page loads

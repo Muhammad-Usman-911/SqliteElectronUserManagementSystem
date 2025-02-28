@@ -10,6 +10,8 @@ const db = require('./database');
 
 let mainWindow;
 let puppeteerWindow = null;
+// Add this property to track download completion
+let downloadComplete = false;
 
 // Configure logging
 log.transports.file.level = 'info';
@@ -61,7 +63,16 @@ function checkForUpdates() {
             log.error('Error checking for updates:', err);
         });
 }
-
+// Add this to your IPC handlers section in main.js
+ipcMain.handle('check-for-updates', async () => {
+    // Only check if app is packaged
+    if (app.isPackaged) {
+        return checkForUpdates();
+    } else {
+        log.info('Skip checkForUpdates because application is not packaged');
+        return { success: false, message: 'App is in development mode' };
+    }
+});
 // Update event listeners
 autoUpdater.on('checking-for-update', () => {
     log.info('Checking for updates...');
@@ -94,13 +105,23 @@ autoUpdater.on('download-progress', (progressObj) => {
     }
 });
 
+// autoUpdater.on('update-downloaded', () => {
+//     log.info('Update downloaded');
+    
+//     if (mainWindow && !mainWindow.isDestroyed()) {
+//         mainWindow.webContents.send('update-downloaded');
+//     }
+// });
+// Update the 'update-downloaded' event
 autoUpdater.on('update-downloaded', () => {
     log.info('Update downloaded');
+    downloadComplete = true;
     
     if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('update-downloaded');
     }
 });
+
 
 autoUpdater.on('error', (err) => {
     log.error('Error during update:', err);
@@ -119,11 +140,21 @@ ipcMain.handle('start-update-download', () => {
     return { success: false, message: 'No update available' };
 });
 
+// ipcMain.handle('install-update', () => {
+//     if (updateAvailable && autoUpdater.downloadedUpdateHelper) {
+//         autoUpdater.quitAndInstall(false, true);
+//         return { success: true };
+//     }
+//     return { success: false, message: 'No valid update available' };
+// });
+// Modify the 'install-update' handler again
 ipcMain.handle('install-update', () => {
-    autoUpdater.quitAndInstall(false, true);
-    return { success: true };
+    if (updateAvailable && downloadComplete) {
+        autoUpdater.quitAndInstall(false, true);
+        return { success: true };
+    }
+    return { success: false, message: 'No valid update available' };
 });
-
 
 function createPuppeteerWindow() {
     // If a window already exists, focus it but don't create a new one
@@ -237,7 +268,7 @@ ipcMain.handle("login-facebook", async (event, { email, password }) => {
         
         // Save to database
         const savedId = await saveAccountToDB({
-            user_name: nickname,
+            name: nickname,
             email: email,
             password: password,
             cookies: JSON.stringify(cookies),
@@ -292,10 +323,10 @@ async function updateUserCookies(id, cookies) {
 async function saveAccountToDB(userData) {
     console.log('Facebook Saving User ! : ', userData);
     return new Promise((resolve, reject) => {
-        const { user_name, email, password, cookies, type } = userData;
+        const { name, email, password, cookies, type } = userData;
         db.run(
-            "INSERT INTO user (user_name, email, password, cookies, type) VALUES (?, ?, ?, ?, ?)",
-            [user_name, email, password, cookies, type],
+            "INSERT INTO user (name, email, password, cookies, type) VALUES (?, ?, ?, ?, ?)",
+            [name, email, password, cookies, type],
             function(err) {
                 if (err) reject(err);
                 resolve(this.lastID);
@@ -307,8 +338,8 @@ async function saveAccountToDB(userData) {
 // Add a new user
 ipcMain.handle("add-user", async (event, user) => {
     return new Promise((resolve, reject) => {
-        db.run("INSERT INTO user (user_name, email, password, cookies) VALUES (?, ?, ?, ?)",
-            [user.user_name, user.email, user.password, user.cookies], function (err) {
+        db.run("INSERT INTO user (name, email, password, cookies) VALUES (?, ?, ?, ?)",
+            [user.name, user.email, user.password, user.cookies], function (err) {
                 if (err) reject(err);
                 resolve(this.lastID);
             }
@@ -344,8 +375,8 @@ ipcMain.handle("delete-user", async (event, id) => {
 // Update user
 ipcMain.handle("update-user", async (event, user) => {
     return new Promise((resolve, reject) => {
-        db.run("UPDATE user SET user_name = ?, email = ?, password = ?, cookies = ?, two_fa_code = ? WHERE id = ?",
-            [user.user_name, user.email, user.password, user.cookies, user.twoFA, user.id], function (err) {
+        db.run("UPDATE user SET name = ?, email = ?, password = ?, cookies = ?, two_fa_code = ? WHERE id = ?",
+            [user.name, user.email, user.password, user.cookies, user.twoFA, user.id], function (err) {
                 if (err) reject(err);
                 resolve(true);
             }
