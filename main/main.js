@@ -5,6 +5,11 @@ const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const url = require('url');
 
+// Add this code right here, after app is imported but before autoUpdater is configured
+if (process.platform === 'darwin') {
+    app.commandLine.appendSwitch('ignore-certificate-errors');
+  }
+  
 // Import the database
 const db = require('./database');
 
