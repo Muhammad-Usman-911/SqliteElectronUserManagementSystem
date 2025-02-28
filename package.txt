@@ -1,6 +1,6 @@
 {
   "name": "electron-sqlite-app",
-  "version": "3.0.1",
+  "version": "3.0.0",
   "main": "main/main.js",
   "scripts": {
     "start": "electron .",
@@ -14,6 +14,12 @@
       "main/**/*",
       "renderer/**/*",
       "db.sqlite"
+    ],
+    "extraResources": [
+      {
+        "from": "./db.sqlite",
+        "to": "db.sqlite"
+      }
     ],
     "win": {
       "target": "nsis",
@@ -49,91 +55,6 @@
   "author": "",
   "license": "ISC",
   "description": "",
-  "dependencies": {
-    "electron-log": "^5.1.1",
-    "electron-updater": "^6.3.9",
-    "knex": "^3.1.0",
-    "puppeteer-core": "^24.2.1",
-    "sqlite3": "^5.1.7"
-  },
-  "devDependencies": {
-    "electron": "^34.2.0",
-    "electron-builder": "^25.1.8",
-    "vite": "^6.1.1"
-  }
-}
-
-
-----------------------------------------------------------------------
-{
-  "name": "electron-sqlite-app",
-  "version": "3.1.0",
-  "main": "main/main.js",
-  "scripts": {
-    "start": "electron .",
-    "make": "electron-builder --dir",
-    "build-win": "electron-builder --win",
-    "build-mac": "electron-builder --mac",
-    "build-linux": "electron-builder --linux",
-    "publish": "electron-builder -p always"
-  },
-  "build": {
-    "appId": "com.example.electron-sqlite",
-    "productName": "Electron SQLite App",
-    "files": [
-      "main/**/*",
-      "renderer/**/*",
-      "!node_modules/.cache",
-      "!**/*.md",
-      "!**/*.map"
-    ],
-    "extraResources": [
-      {
-        "from": "./db.sqlite",
-        "to": "db.sqlite"
-      }
-    ],
-    "win": {
-      "target": ["nsis", "portable"],
-      "artifactName": "${productName}-Setup-${version}.${ext}"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "perMachine": false,
-      "allowElevation": true,
-      "deleteAppDataOnUninstall": false,
-      "createDesktopShortcut": true,
-      "artifactName": "${productName} Setup ${version}.${ext}"
-    },
-    "linux": {
-      "target": ["AppImage", "deb", "rpm"],
-      "category": "Utility",
-      "artifactName": "${productName}-Linux-${version}.${ext}"
-    },
-    "mac": {
-      "target": ["dmg", "zip"],
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "artifactName": "${productName}-Mac-${version}.${ext}"
-    },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "Muhammad-Usman-911",
-        "repo": "SqliteElectronUserManagementSystem"
-      }
-    ],
-    "directories": {
-      "buildResources": "resources",
-      "output": "dist"
-    },
-    "asar": true
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Muhammad-Usman-911/SqliteElectronUserManagementSystem.git"
-  },
   "dependencies": {
     "electron-log": "^5.1.1",
     "electron-updater": "^6.3.9",
