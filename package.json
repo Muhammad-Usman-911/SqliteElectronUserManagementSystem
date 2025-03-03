@@ -1,6 +1,6 @@
 {
   "name": "electron-sqlite-app",
-  "version": "4.2.0",
+  "version": "5.0.0",
   "main": "main/main.js",
   "scripts": {
     "start": "electron .",
@@ -26,9 +26,9 @@
     "mac": {
       "target": ["dmg", "zip"],
       "category": "public.app-category.utilities",
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
       "gatekeeperAssess": false,
-      "artifactName": "${productName}-${version}-Mac.${ext}"
+      "sign": false
     },
     "dmg": {
       "contents": [
@@ -49,8 +49,8 @@
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
       "perMachine": false,
       "allowElevation": true,
       "deleteAppDataOnUninstall": false,

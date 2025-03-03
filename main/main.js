@@ -22,7 +22,11 @@ let downloadComplete = false;
 log.transports.file.level = 'info';
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false;
-autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.autoInstallOnAppQuit = false;
+
+// Add this configuration
+autoUpdater.allowDowngrade = false;
+autoUpdater.allowPrerelease = false;
 
 // Auto-updater variables
 let updateAvailable = false;
@@ -112,6 +116,20 @@ autoUpdater.on('download-progress', (progressObj) => {
     }
 });
 
+// autoUpdater.on('update-downloaded', () => {
+//     log.info('Update downloaded');
+//     downloadComplete = true;
+    
+//     if (mainWindow && !mainWindow.isDestroyed()) {
+//         mainWindow.webContents.send('update-downloaded');
+        
+//         // Automatically install update after a brief delay
+//         setTimeout(() => {
+//             autoUpdater.quitAndInstall(false, true);
+//         }, 2000);
+//     }
+// });
+// Replace the update-downloaded handler with this
 autoUpdater.on('update-downloaded', () => {
     log.info('Update downloaded');
     downloadComplete = true;
@@ -119,12 +137,22 @@ autoUpdater.on('update-downloaded', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('update-downloaded');
         
-        // Automatically install update after a brief delay
-        setTimeout(() => {
-            autoUpdater.quitAndInstall(false, true);
-        }, 2000);
+        // Instead of automatically installing right away, let user decide
+        dialog.showMessageBox({
+            type: 'info',
+            title: 'Update Ready',
+            message: 'A new version has been downloaded. Apply update now?',
+            buttons: ['Yes', 'Later']
+        }).then(({response}) => {
+            if (response === 0) {
+                // Set silent install to true to avoid installer UI
+                autoUpdater.quitAndInstall(true, true);
+            }
+        });
     }
 });
+
+
 
 autoUpdater.on('error', (err) => {
     log.error('Error during update:', err);
@@ -143,9 +171,11 @@ ipcMain.handle('start-update-download', () => {
     return { success: false, message: 'No update available' };
 });
 
+// Also update this IPC handler
 ipcMain.handle('install-update', () => {
     if (updateAvailable && downloadComplete) {
-        autoUpdater.quitAndInstall(false, true);
+        // Set silent install to true to avoid installer UI
+        autoUpdater.quitAndInstall(true, true);
         return { success: true };
     }
     return { success: false, message: 'No valid update available' };
